@@ -2,9 +2,10 @@ package net.autch.android.s98droid;
 
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
@@ -12,6 +13,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -27,7 +29,7 @@ public class SelectSong extends ListActivity {
 
 	private static final int MID_STOP = 0x1001;
 
-	private final ArrayList<HashMap<String, String>> files = new ArrayList<HashMap<String, String>>();
+	private final List<Map<String, String>> files = new ArrayList<Map<String, String>>();
 	private final Handler handler = new Handler();
 	private ProgressDialog dialog; 
 
@@ -48,17 +50,11 @@ public class SelectSong extends ListActivity {
 	private final DirDiver.Callback enumFiles = new DirDiver.Callback() {
 		public boolean process(File f) {
 			try {
-				String[] titles;// = PMDFileParser.getTitleInfo(f);
-				String realTitle = null; // = titles[0];
-				if(realTitle == null || realTitle.length() == 0) {
-					realTitle = f.getName();
+				Map<String, String> tags = S98FileParser.getTagInfo(f.getAbsolutePath());
+				if(tags.get("title") == null || tags.get("title").length() == 0) {
+					tags.put("title", f.getName());
 				}
-
-				HashMap<String, String> map = new HashMap<String, String>();
-				map.put("filename", f.toString());
-				map.put("title", realTitle);
-				//map.put("title2", titles[1]);
-				files.add(map);
+				files.add(tags);
 			} catch (/*IO*/Exception e) {
 				// TODO 自動生成された catch ブロック
 				e.printStackTrace();
@@ -79,14 +75,14 @@ public class SelectSong extends ListActivity {
 
 		new Thread(new Runnable() {
 			public void run() {
-				DirDiver diver = new DirDiver("/sdcard", ".s98");
+				DirDiver diver = new DirDiver(Environment.getExternalStorageDirectory().getPath(), ".s98");
 				diver.setCallback(enumFiles);
 				diver.start();
 
 				handler.post(new Runnable() {
 					public void run() {
 						SimpleAdapter adapter = new SimpleAdapter(SelectSong.this, files, android.R.layout.simple_list_item_2,
-								new String[] { "title", "title2" }, new int[] { android.R.id.text1, android.R.id.text2 });
+								new String[] { "title", "game" }, new int[] { android.R.id.text1, android.R.id.text2 });
 						setListAdapter(adapter);
 						getListView().setFastScrollEnabled(true);
 						getListView().getParent().requestLayout();
@@ -99,7 +95,7 @@ public class SelectSong extends ListActivity {
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
-		HashMap<String, String> item = files.get(position);
+		Map<String, String> item = files.get(position);
 
 		Intent it = new Intent(this, S98PlayerService.class);
 		it.putExtra("filename", item.get("filename"));

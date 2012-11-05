@@ -17,9 +17,9 @@ public class S98PlayerService extends Service {
 	private static final String TAG = "S98PlayerService";
 
 	private static final int SAMPLES_PER_SEC = 48000;
-	private static final int BYTES_PER_BLOCK = SAMPLES_PER_SEC * 2 * 2;
+	private static final int BYTES_PER_BLOCK = SAMPLES_PER_SEC / 8 * 2 * 2;
 	private static final int BLOCKS_AT_ONCE = 1;
-	private static final int WAIT_PER_BLOCK = 250;
+	private static final int WAIT_PER_BLOCK = 0;
 
 	private static final int NID_PMD_PLAYING = 0x1;
 

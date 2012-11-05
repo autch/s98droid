@@ -23,6 +23,7 @@ MY_M_S98_SRC = ./m_s98/device/s98fmgen.cpp \
 LOCAL_MODULE    := m_s98
 LOCAL_SRC_FILES := jni.cpp $(MY_M_S98_SRC) $(MY_FMGEN_SRC)
 LOCAL_CFLAGS    += -DUSE_ZLIB -I$(LOCAL_PATH)/m_s98 -I.. 
-LOCAL_LDLIBS += -lz
+LOCAL_LDLIBS	+= -lz
+LOCAL_ARM_MODE	:= arm
 
 include $(BUILD_SHARED_LIBRARY)
