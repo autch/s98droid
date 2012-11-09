@@ -5,6 +5,8 @@ import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.util.Log;
+
 public class S98FileParser {
 	private static final String TAG = "S98FileParser";
 	
@@ -63,22 +65,27 @@ public class S98FileParser {
 				case 3:
 					String tagMarker = new String(buffer, 0, 5, "Shift_JIS");
 					if(tagMarker.equals("[S98]")) {
-						String charCode;
-						int offset = 0;
-						if(buffer[5] == 0xef && buffer[6] == 0xbb && buffer[7] == 0xbf) {
-							// BOM
-							charCode = "UTF-8";
-							offset = 5 + 3;
-						} else {
-							charCode = "Shift_JIS";
-							offset = 5;
-						}
-						if(buffer[bytesRead] == 0x00) bytesRead--;
-						String wholeTags = new String(buffer, offset, bytesRead - offset, charCode);
-						String[] rawTags = wholeTags.split("\\x0a");
-						for(int i = 0; i < rawTags.length; i++) {
-							String[] kv = rawTags[i].split("=");
-							tags.put(kv[0], kv[1]);
+						try {
+							String charCode;
+							int offset = 0;
+							if(buffer[5] == 0xef && buffer[6] == 0xbb && buffer[7] == 0xbf) {
+								// BOM
+								charCode = "UTF-8";
+								offset = 5 + 3;
+							} else {
+								charCode = "Shift_JIS";
+								offset = 5;
+							}
+							if(buffer[bytesRead-1] == 0x00) bytesRead--;
+							String wholeTags = new String(buffer, offset, bytesRead - offset, charCode);
+							String[] rawTags = wholeTags.split("\\x0a");
+							for(int i = 0; i < rawTags.length; i++) {
+								if(rawTags[i].length() == 0) continue;
+								String[] kv = rawTags[i].split("=");
+								tags.put(kv[0].toLowerCase(), kv[1]);
+							}
+						} catch(Exception e) {
+							Log.e(TAG, "Failed to parse file: " + filename, e);
 						}
 					} else {
 						for(lenTitle = 0; buffer[lenTitle] != 0x00; lenTitle++)

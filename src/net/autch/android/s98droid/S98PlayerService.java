@@ -125,6 +125,7 @@ public class S98PlayerService extends Service {
 
 	public synchronized void pauseSong() {
 		terminate = true;
+		if(thread == null) return;
 		try {
 			thread.join();
 		} catch (InterruptedException e) {
@@ -141,6 +142,7 @@ public class S98PlayerService extends Service {
 
 	public synchronized void stopSong() {
 		terminate = true;
+		if(thread == null) return;
 		try {
 			thread.join();
 		} catch (InterruptedException e) {
