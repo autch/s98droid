@@ -17,15 +17,16 @@ public class S98PlayerService extends Service {
 	private static final String TAG = "S98PlayerService";
 
 	private static final int SAMPLES_PER_SEC = 48000;
-	private static final int BYTES_PER_BLOCK = SAMPLES_PER_SEC / 8 * 2 * 2;
-	private static final int BLOCKS_AT_ONCE = 1;
+	private static final int BYTES_PER_SECOND = SAMPLES_PER_SEC * 2 * 2;
+	private static final int TRACK_BUFFER_SIZE = BYTES_PER_SECOND / 4;
+	private static final int BLOCKS_AT_ONCE = BYTES_PER_SECOND / 8;
 	private static final int WAIT_PER_BLOCK = 0;
 
 	private static final int NID_PMD_PLAYING = 0x1;
 
 	private AudioTrack track;
 	private boolean terminate;
-	private final byte[] buffer = new byte[BYTES_PER_BLOCK * BLOCKS_AT_ONCE];
+	private final byte[] buffer = new byte[BLOCKS_AT_ONCE];
 	private final byte[] empty = new byte[256];
 	private String filename, title, title2;
 	private Thread thread; 
@@ -71,7 +72,7 @@ public class S98PlayerService extends Service {
 		nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
 		track = new AudioTrack(AudioManager.STREAM_MUSIC, SAMPLES_PER_SEC, AudioFormat.CHANNEL_OUT_STEREO,
-				AudioFormat.ENCODING_PCM_16BIT,	BYTES_PER_BLOCK * BLOCKS_AT_ONCE, AudioTrack.MODE_STREAM);
+				AudioFormat.ENCODING_PCM_16BIT,	TRACK_BUFFER_SIZE, AudioTrack.MODE_STREAM);
 		terminate = false;
 		thread = null;
 		MS98NativeInterface.ms98Init();

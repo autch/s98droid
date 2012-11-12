@@ -1,5 +1,5 @@
 
-#include "m_s98.h"
+#include "m_s98/m_s98.h"
 #include "net_autch_android_s98droid_MS98NativeInterface.h"
 #include <sys/types.h>
 #include <sys/stat.h>

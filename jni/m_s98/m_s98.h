@@ -2,13 +2,37 @@
 #define m_s98_h
 
 #include <stdint.h>
-#include "m_s98/device/s98types.h"
-#include "m_s98/device/s98device.h"
+#include "device/s98types.h"
+#include "device/s98device.h"
 
 #define SAMPLE_RATE 48000
 #define SYNC_RATE 60 /* (Hz) */
 #define UNIT_RENDER (SAMPLE_RATE/SYNC_RATE)
+
+#define MASTER_CLOCK (7987200)
+#define LOOPNUM 3
+#define FADEOUT_TIME 0/*(10 * SYNC_RATE)*/
+
 #define S98DEVICE_MAX 16
+
+/* S98 file header */
+#define S98_MAGIC_V0	(0x53393830)	/* 'S980' */
+#define S98_MAGIC_V1	(0x53393831)	/* 'S981' */
+#define S98_MAGIC_V2	(0x53393832)	/* 'S982' */
+#define S98_MAGIC_V3	(0x53393833)	/* 'S983' */
+#define S98_MAGIC_VZ	(0x5339385A)	/* 'S98Z' */
+#define S98_OFS_MAGIC		(0x00)
+#define S98_OFS_TIMER_INFO1	(0x04)
+#define S98_OFS_TIMER_INFO2	(0x08)
+#define S98_OFS_COMPRESSING	(0x0C)
+#define S98_OFS_OFSTITLE	(0x10)
+#define S98_OFS_OFSDATA		(0x14)
+#define S98_OFS_OFSLOOP		(0x18)
+#define S98_OFS_OFSCOMP		(0x1C)
+#define S98_OFS_DEVICECOUNT	(0x1C)
+#define S98_OFS_DEVICEINFO	(0x20)
+
+#define VGM_MAGIC		(0x56676D20)	/* 'Vgm ' */
 
 class s98File {
 public:
