@@ -17,7 +17,6 @@ PSG::PSG()
 	MakeNoiseTable();
 	Reset();
 	mask = 0x3f;
-	pan = 0x3f;
 }
 
 PSG::~PSG()
@@ -105,11 +104,6 @@ void PSG::SetChannelMask(int c)
 	mask = ~c;
 	for (int i=0; i<3; i++)
 		olevel[i] = mask & (1 << i) ? EmitTable[(reg[8+i] & 15) * 2 + 1] : 0;
-}
-
-void PSG::SetPan(uint panning)
-{
-	pan = panning;
 }
 
 // ---------------------------------------------------------------------------
@@ -233,7 +227,7 @@ void PSG::Mix(Sample* dest, int nsamples)
 		nenable[1]  = (r7 >> 4) & 1;
 		nenable[2]  = (r7 >> 5) & 1;
 		
-		int noise, sample[2];
+		int noise, sample;
 		uint env;
 		uint* p1 = ((mask & 1) && (reg[ 8] & 0x10)) ? &env : &olevel[0];
 		uint* p2 = ((mask & 2) && (reg[ 9] & 0x10)) ? &env : &olevel[1];
@@ -249,27 +243,23 @@ void PSG::Mix(Sample* dest, int nsamples)
 				// ノイズ無し
 				for (int i=0; i<nsamples; i++)
 				{
-					sample[0] = sample[1] = 0;
+					sample = 0;
 					for (int j=0; j < (1 << oversampling); j++)
 					{
 						int x, y, z;
 						x = (SCOUNT(0) & chenable[0]) - 1;
-						sample[0] += (pan&0x01)?(olevel[0] + x) ^ x:0;
-						sample[1] += (pan&0x02)?(olevel[0] + x) ^ x:0;
+						sample += (olevel[0] + x) ^ x;
 						scount[0] += speriod[0];
 						y = (SCOUNT(1) & chenable[1]) - 1;
-						sample[0] += (pan&0x04)?(olevel[1] + y) ^ y:0;
-						sample[1] += (pan&0x08)?(olevel[1] + y) ^ y:0;
+						sample += (olevel[1] + y) ^ y;
 						scount[1] += speriod[1];
 						z = (SCOUNT(2) & chenable[2]) - 1;
-						sample[0] += (pan&0x10)?(olevel[2] + z) ^ z:0;
-						sample[1] += (pan&0x20)?(olevel[2] + z) ^ z:0;
+						sample += (olevel[2] + z) ^ z;
 						scount[2] += speriod[2];
 					}
-					sample[0] /= (1 << oversampling);
-					sample[1] /= (1 << oversampling);
-					StoreSample(dest[0], sample[0]);
-					StoreSample(dest[1], sample[1]);
+					sample /= (1 << oversampling);
+					StoreSample(dest[0], sample);
+					StoreSample(dest[1], sample);
 					dest += 2;
 				}
 			}
@@ -278,7 +268,7 @@ void PSG::Mix(Sample* dest, int nsamples)
 				// ノイズ有り
 				for (int i=0; i<nsamples; i++)
 				{
-					sample[0] = sample[1] = 0;
+					sample = 0;
 					for (int j=0; j < (1 << oversampling); j++)
 					{
 #ifdef _M_IX86
@@ -292,22 +282,18 @@ void PSG::Mix(Sample* dest, int nsamples)
 
 						int x, y, z;
 						x = ((SCOUNT(0) & chenable[0]) | (nenable[0] & noise)) - 1;		// 0 or -1
-						if (pan & 0x01) sample[0] += (olevel[0] + x) ^ x;
-						if (pan & 0x02) sample[1] += (olevel[0] + x) ^ x;
+						sample += (olevel[0] + x) ^ x;
 						scount[0] += speriod[0];
 						y = ((SCOUNT(1) & chenable[1]) | (nenable[1] & noise)) - 1;
-						if (pan & 0x04) sample[0] += (olevel[1] + y) ^ y;
-						if (pan & 0x08) sample[1] += (olevel[1] + y) ^ y;
+						sample += (olevel[1] + y) ^ y;
 						scount[1] += speriod[1];
 						z = ((SCOUNT(2) & chenable[2]) | (nenable[2] & noise)) - 1;
-						if (pan & 0x10) sample[0] += (olevel[2] + z) ^ z;
-						if (pan & 0x20) sample[1] += (olevel[2] + z) ^ z;
+						sample += (olevel[2] + z) ^ z;
 						scount[2] += speriod[2];
 					}
-					sample[0] /= (1 << oversampling);
-					sample[1] /= (1 << oversampling);
-					StoreSample(dest[0], sample[0]);
-					StoreSample(dest[1], sample[1]);
+					sample /= (1 << oversampling);
+					StoreSample(dest[0], sample);
+					StoreSample(dest[1], sample);
 					dest += 2;
 				}
 			}
@@ -327,7 +313,7 @@ void PSG::Mix(Sample* dest, int nsamples)
 			// エンベロープあり
 			for (int i=0; i<nsamples; i++)
 			{
-				sample[0] = sample[1] = 0;
+				sample = 0;
 				for (int j=0; j < (1 << oversampling); j++)
 				{
 					env = envelop[ecount >> (envshift+oversampling)];
@@ -349,22 +335,18 @@ void PSG::Mix(Sample* dest, int nsamples)
 
 					int x, y, z;
 					x = ((SCOUNT(0) & chenable[0]) | (nenable[0] & noise)) - 1;		// 0 or -1
-					if (pan & 0x01) sample[0] += (*p1 + x) ^ x;
-					if (pan & 0x02) sample[1] += (*p1 + x) ^ x;
+					sample += (*p1 + x) ^ x;
 					scount[0] += speriod[0];
 					y = ((SCOUNT(1) & chenable[1]) | (nenable[1] & noise)) - 1;
-					if (pan & 0x04) sample[0] += (*p2 + y) ^ y;
-					if (pan & 0x08) sample[1] += (*p2 + y) ^ y;
+					sample += (*p2 + y) ^ y;
 					scount[1] += speriod[1];
 					z = ((SCOUNT(2) & chenable[2]) | (nenable[2] & noise)) - 1;
-					if (pan & 0x10) sample[0] += (*p3 + z) ^ z;
-					if (pan & 0x20) sample[1] += (*p3 + z) ^ z;
+					sample += (*p3 + z) ^ z;
 					scount[2] += speriod[2];
 				}
-				sample[0] /= (1 << oversampling);
-				sample[1] /= (1 << oversampling);
-				StoreSample(dest[0], sample[0]);
-				StoreSample(dest[1], sample[1]);
+				sample /= (1 << oversampling);
+				StoreSample(dest[0], sample);
+				StoreSample(dest[1], sample);
 				dest += 2;
 			}
 		}
@@ -377,4 +359,3 @@ void PSG::Mix(Sample* dest, int nsamples)
 uint	PSG::noisetable[noisetablesize] = { 0, };
 int		PSG::EmitTable[0x20] = { -1, };
 uint	PSG::enveloptable[16][64] = { 0, };
-

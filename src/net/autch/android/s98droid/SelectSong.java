@@ -2,7 +2,9 @@ package net.autch.android.s98droid;
 
 
 import java.io.File;
+import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -50,7 +52,12 @@ public class SelectSong extends ListActivity {
 	private final DirDiver.Callback enumFiles = new DirDiver.Callback() {
 		public boolean process(File f) {
 			try {
-				Map<String, String> tags = S98FileParser.getTagInfo(f.getAbsolutePath());
+				Map<String, String> tags;
+				if(f.getName().toLowerCase().endsWith(".s98")) {
+					tags = S98FileParser.getTagInfo(f.getAbsolutePath());
+				} else {
+					tags = PMDFileParser.getTagInfo(f.getAbsolutePath());
+				}
 				if(tags.get("title") == null || tags.get("title").length() == 0) {
 					tags.put("title", f.getName());
 				}
@@ -75,7 +82,25 @@ public class SelectSong extends ListActivity {
 
 		new Thread(new Runnable() {
 			public void run() {
-				DirDiver diver = new DirDiver(Environment.getExternalStorageDirectory().getPath(), ".s98");
+				DirDiver diver = new DirDiver(Environment.getExternalStorageDirectory().getPath(), new FileFilter() {
+
+					@Override
+					public boolean accept(File pathname) {
+						String ext = pathname.getName().toLowerCase();
+						boolean f = true;
+						
+						f = pathname.isDirectory();
+						f = f || ext.endsWith(".s98");
+						f = f || ext.endsWith(".m");
+						f = f || ext.endsWith(".m2");
+						f = f || ext.endsWith(".mz");
+						f = f || ext.endsWith(".mp");
+						f = f || ext.endsWith(".ms");
+						
+						return f;
+					}
+					
+				});
 				diver.setCallback(enumFiles);
 				diver.start();
 
@@ -100,7 +125,7 @@ public class SelectSong extends ListActivity {
 		Intent it = new Intent(this, S98PlayerService.class);
 		it.putExtra("filename", item.get("filename"));
 		it.putExtra("title", item.get("title"));
-		it.putExtra("title2", item.get("title2"));
+		it.putExtra("title2", item.get("game"));
 		startService(it);
 
 		Toast t = Toast.makeText(this, "演奏を開始します", Toast.LENGTH_SHORT);

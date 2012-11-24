@@ -13,70 +13,70 @@
 
 // ---------------------------------------------------------------------------
 //	class OPN/OPNA
-//	OPN/OPNA �ɗǂ��������𐶐����鉹�����j�b�g
+//	OPN/OPNA に良く似た音を生成する音源ユニット
 //	
 //	interface:
 //	bool Init(uint clock, uint rate, bool, const char* path);
-//		����D���̃N���X���g�p����O�ɂ��Ȃ炸�Ă�ł������ƁD
-//		OPNA �̏ꍇ�͂��̊֐��Ń��Y���T���v����ǂݍ���
+//		初期化．このクラスを使用する前にかならず呼んでおくこと．
+//		OPNA の場合はこの関数でリズムサンプルを読み込む
 //
-//		clock:	OPN/OPNA/OPNB �̃N���b�N��g��(Hz)
+//		clock:	OPN/OPNA/OPNB のクロック周波数(Hz)
 //
-//		rate:	�������� PCM �̕W�{��g��(Hz)
+//		rate:	生成する PCM の標本周波数(Hz)
 //
-//		path:	���Y���T���v���̃p�X(OPNA �̂ݗL��)
-//				�ȗ����̓J�����g�f�B���N�g������ǂݍ���
-//				������̖����ɂ� '\' �� '/' �Ȃǂ����邱��
+//		path:	リズムサンプルのパス(OPNA のみ有効)
+//				省略時はカレントディレクトリから読み込む
+//				文字列の末尾には '\' や '/' などをつけること
 //
-//		�Ԃ�l	����ɐ�������� true
+//		返り値	初期化に成功すれば true
 //
 //	bool LoadRhythmSample(const char* path)
 //		(OPNA ONLY)
-//		Rhythm �T���v����ǂݒ����D
-//		path �� Init �� path �Ɠ����D
+//		Rhythm サンプルを読み直す．
+//		path は Init の path と同じ．
 //		
 //	bool SetRate(uint clock, uint rate, bool)
-//		�N���b�N�� PCM ���[�g��ύX����
-//		���� Init ���Q�Ƃ̂��ƁD
+//		クロックや PCM レートを変更する
+//		引数等は Init を参照のこと．
 //	
 //	void Mix(FM_SAMPLETYPE* dest, int nsamples)
-//		Stereo PCM �f�[�^�� nsamples ���������C dest �Ŏn�܂�z���
-//		������(���Z����)
-//		�Edest �ɂ� sample*2 ���̗̈悪�K�v
-//		�E�i�[�`���� L, R, L, R... �ƂȂ�D
-//		�E�����܂ŉ��Z�Ȃ̂ŁC���炩���ߔz����[���N���A����K�v������
-//		�EFM_SAMPLETYPE �� short �^�̏ꍇ�N���b�s���O���s����.
-//		�E���̊֐��͉��������̃^�C�}�[�Ƃ͓Ɨ����Ă���D
-//		  Timer �� Count �� GetNextEvent �ő��삷��K�v������D
+//		Stereo PCM データを nsamples 分合成し， dest で始まる配列に
+//		加える(加算する)
+//		・dest には sample*2 個分の領域が必要
+//		・格納形式は L, R, L, R... となる．
+//		・あくまで加算なので，あらかじめ配列をゼロクリアする必要がある
+//		・FM_SAMPLETYPE が short 型の場合クリッピングが行われる.
+//		・この関数は音源内部のタイマーとは独立している．
+//		  Timer は Count と GetNextEvent で操作する必要がある．
 //	
 //	void Reset()
-//		���������Z�b�g(����)����
+//		音源をリセット(初期化)する
 //
 //	void SetReg(uint reg, uint data)
-//		�����̃��W�X�^ reg �� data ����������
+//		音源のレジスタ reg に data を書き込む
 //	
 //	uint GetReg(uint reg)
-//		�����̃��W�X�^ reg �̓��e��ǂݏo��
-//		�ǂݍ��ނ��Ƃ��o���郌�W�X�^�� PSG, ADPCM �̈ꕔ�CID(0xff) �Ƃ�
+//		音源のレジスタ reg の内容を読み出す
+//		読み込むことが出来るレジスタは PSG, ADPCM の一部，ID(0xff) とか
 //	
 //	uint ReadStatus()/ReadStatusEx()
-//		�����̃X�e�[�^�X���W�X�^��ǂݏo��
-//		ReadStatusEx �͊g���X�e�[�^�X���W�X�^�̓ǂݏo��(OPNA)
-//		busy �t���O�͏�� 0
+//		音源のステータスレジスタを読み出す
+//		ReadStatusEx は拡張ステータスレジスタの読み出し(OPNA)
+//		busy フラグは常に 0
 //	
 //	bool Count(uint32 t)
-//		�����̃^�C�}�[�� t [�ʕb] �i�߂�D
-//		�����̓�����Ԃɕω�����������(timer �I�[�o�[�t���[)
-//		true ��Ԃ�
+//		音源のタイマーを t [μ秒] 進める．
+//		音源の内部状態に変化があった時(timer オーバーフロー)
+//		true を返す
 //
 //	uint32 GetNextEvent()
-//		�����̃^�C�}�[�̂ǂ��炩���I�[�o�[�t���[����܂łɕK�v��
-//		����[�ʕb]��Ԃ�
-//		�^�C�}�[����~���Ă���ꍇ�� ULONG_MAX ��Ԃ��c �Ǝv��
+//		音源のタイマーのどちらかがオーバーフローするまでに必要な
+//		時間[μ秒]を返す
+//		タイマーが停止している場合は ULONG_MAX を返す… と思う
 //	
 //	void SetVolumeFM(int db)/SetVolumePSG(int db) ...
-//		�e�����̉��ʂ��{�|���ɒ��߂���D�W���l�� 0.
-//		�P�ʂ͖� 1/2 dB�C�L��͈͂̏���� 20 (10dB)
+//		各音源の音量を＋−方向に調節する．標準値は 0.
+//		単位は約 1/2 dB，有効範囲の上限は 20 (10dB)
 //
 namespace FM
 {
@@ -100,9 +100,9 @@ namespace FM
 		
 		int		fmvolume;
 		
-		uint	clock;				// OPN �N���b�N
-		uint	rate;				// FM �����������[�g
-		uint	psgrate;			// FMGen  �o�̓��[�g
+		uint	clock;				// OPN クロック
+		uint	rate;				// FM 音源合成レート
+		uint	psgrate;			// FMGen  出力レート
 		uint	status;
 		Channel4* csmch;
 		
@@ -163,7 +163,7 @@ namespace FM
 		int		ReadRAMN();
 		int		DecodeADPCMBSample(uint);
 		
-	// FM �����֌W
+	// FM 音源関係
 		uint8	pan[6];
 		uint8	fnum2[9];
 		
@@ -179,49 +179,45 @@ namespace FM
 		uint	fnum[6];
 		uint	fnum3[3];
 		
-	// ADPCM �֌W
+	// ADPCM 関係
 		uint8*	adpcmbuf;		// ADPCM RAM
-		uint	adpcmmask;		// �������A�h���X�ɑ΂���r�b�g�}�X�N
-		uint	adpcmnotice;	// ADPCM �Đ��I�����ɂ��r�b�g
+		uint	adpcmmask;		// メモリアドレスに対するビットマスク
+		uint	adpcmnotice;	// ADPCM 再生終了時にたつビット
 		uint	startaddr;		// Start address
 		uint	stopaddr;		// Stop address
-		uint	memaddr;		// �Đ����A�h���X
+		uint	memaddr;		// 再生中アドレス
 		uint	limitaddr;		// Limit address/mask
-		int		adpcmlevel;		// ADPCM ����
+		int		adpcmlevel;		// ADPCM 音量
 		int		adpcmvolume;
 		int		adpcmvol;
-		uint	deltan;			// ��N
-		int		adplc;			// ��g���ϊ��p�ϐ�
-		int		adpld;			// ��g���ϊ��p�ϐ������l
-		uint	adplbase;		// adpld �̌�
-		int		adpcmx;			// ADPCM �����p x
-		int		adpcmd;			// ADPCM �����p ��
-		int		adpcmout;		// ADPCM ������̏o��
+		uint	deltan;			// ⊿N
+		int		adplc;			// 周波数変換用変数
+		int		adpld;			// 周波数変換用変数差分値
+		uint	adplbase;		// adpld の元
+		int		adpcmx;			// ADPCM 合成用 x
+		int		adpcmd;			// ADPCM 合成用 ⊿
+		int		adpcmout;		// ADPCM 合成後の出力
 		int		apout0;			// out(t-2)+out(t-1)
 		int		apout1;			// out(t-1)+out(t)
 
-		uint	adpcmreadbuf;	// ADPCM ���[�h�p�o�b�t�@
-		bool	adpcmplay;		// ADPCM �Đ���
+		uint	adpcmreadbuf;	// ADPCM リード用バッファ
+		bool	adpcmplay;		// ADPCM 再生中
 		int8	granuality;		
 		bool	adpcmmask_;
 
-		uint8	control1;		// ADPCM �R���g���[�����W�X�^�P
-		uint8	control2;		// ADPCM �R���g���[�����W�X�^�Q
-		uint8	adpcmreg[8];	// ADPCM ���W�X�^�̈ꕔ��
+		uint8	control1;		// ADPCM コントロールレジスタ１
+		uint8	control2;		// ADPCM コントロールレジスタ２
+		uint8	adpcmreg[8];	// ADPCM レジスタの一部分
 
 		int		rhythmmask_;
 
 		Channel4 ch[6];
-
-		uint8 ch6dac_enable;
-		uint8 ch6dac_disable;
 
 		static void	BuildLFOTable();
 		static int amtable[FM_LFOENTS];
 		static int pmtable[FM_LFOENTS];
 		static int32 tltable[FM_TLENTS+FM_TLPOS];
 		static bool	tablehasmade;
-
 	};
 
 	//	YM2203(OPN) ----------------------------------------------------
@@ -242,7 +238,6 @@ namespace FM
 		uint	ReadStatusEx() { return 0xff; }
 		
 		void	SetChannelMask(uint mask);
-		void	SetPan(uint pan);
 		
 		int		dbgGetOpOut(int c, int s) { return ch[c].op[s].dbgopout_; }
 		int		dbgGetPGOut(int c, int s) { return ch[c].op[s].dbgpgout_; }
@@ -259,7 +254,6 @@ namespace FM
 		uint8	fnum2[6];
 		
 		Channel4 ch[3];
-		uint8	pan;
 	};
 
 	//	YM2608(OPNA) ---------------------------------------------------
@@ -293,23 +287,23 @@ namespace FM
 	private:
 		struct Rhythm
 		{
-			uint8	pan;		// �ς�
-			int8	level;		// �����傤
-			int		volume;		// �����傤�����Ă�
-			int16*	sample;		// ����Ղ�
-			uint	size;		// ������
-			uint	pos;		// ����
-			uint	step;		// ���Ă��Ղ�
-			uint	rate;		// ����Ղ�̂�[��
+			uint8	pan;		// ぱん
+			int8	level;		// おんりょう
+			int		volume;		// おんりょうせってい
+			int16*	sample;		// さんぷる
+			uint	size;		// さいず
+			uint	pos;		// いち
+			uint	step;		// すてっぷち
+			uint	rate;		// さんぷるのれーと
 		};
 	
 		void	RhythmMix(Sample* buffer, uint count);
 
-	// ���Y�������֌W
+	// リズム音源関係
 		Rhythm	rhythm[6];
-		int8	rhythmtl;		// ���Y���S�̂̉���
+		int8	rhythmtl;		// リズム全体の音量
 		int		rhythmtvol;		
-		uint8	rhythmkey;		// ���Y���̃L�[
+		uint8	rhythmkey;		// リズムのキー
 	};
 
 	//	YM2610/B(OPNB) ---------------------------------------------------
@@ -340,30 +334,30 @@ namespace FM
 	private:
 		struct ADPCMA
 		{
-			uint8	pan;		// �ς�
-			int8	level;		// �����傤
-			int		volume;		// �����傤�����Ă�
-			uint	pos;		// ����
-			uint	step;		// ���Ă��Ղ�
+			uint8	pan;		// ぱん
+			int8	level;		// おんりょう
+			int		volume;		// おんりょうせってい
+			uint	pos;		// いち
+			uint	step;		// すてっぷち
 
-			uint	start;		// �J�n
-			uint	stop;		// �I��
-			uint	nibble;		// ���� 4 bit
-			int		adpcmx;		// �ϊ��p
-			int		adpcmd;		// �ϊ��p
+			uint	start;		// 開始
+			uint	stop;		// 終了
+			uint	nibble;		// 次の 4 bit
+			int		adpcmx;		// 変換用
+			int		adpcmd;		// 変換用
 		};
 	
 		int		DecodeADPCMASample(uint);
 		void	ADPCMAMix(Sample* buffer, uint count);
 		static void InitADPCMATable();
 		
-	// ADPCMA �֌W
+	// ADPCMA 関係
 		uint8*	adpcmabuf;		// ADPCMA ROM
 		int		adpcmasize;
 		ADPCMA	adpcma[6];
-		int8	adpcmatl;		// ADPCMA �S�̂̉���
+		int8	adpcmatl;		// ADPCMA 全体の音量
 		int		adpcmatvol;		
-		uint8	adpcmakey;		// ADPCMA �̃L�[
+		uint8	adpcmakey;		// ADPCMA のキー
 		int		adpcmastep;
 		uint8	adpcmareg[32];
  
@@ -373,11 +367,11 @@ namespace FM
 	};
 
 	//	YM2612/3438(OPN2) ----------------------------------------------------
-	class OPN2 : public OPNABase
+	class OPN2 : public OPNBase
 	{
 	public:
 		OPN2();
-		virtual ~OPN2();
+		virtual ~OPN2() {}
 		
 		bool	Init(uint c, uint r, bool=false, const char* =0);
 		bool	SetRate(uint c, uint r, bool);
@@ -390,23 +384,21 @@ namespace FM
 		uint	ReadStatusEx() { return 0xff; }
 		
 		void	SetChannelMask(uint mask);
-		void	SetVolumePCM(int db);
-		
-		void 	PCMMix(Sample* dest, uint count);
 		
 	private:
 		virtual void Intr(bool) {}
-
-		Channel4 ch[6];
-
-	// OPN2 ch6 DAC
-		uint8 *ch6dac_fifo;
-		uint32 ch6dac_ptr;
-		uint32 ch6dac_vol;
-		uint8 ch6dac_pan;
-		uint8 ch6dac_data;
-		bool ch6dac_interpolation;
-
+		
+		void	SetStatus(uint bit);
+		void	ResetStatus(uint bit);
+		
+		uint	fnum[3];
+		uint	fnum3[3];
+		uint8	fnum2[6];
+		
+	// 線形補間用ワーク
+		int32	mixc, mixc1;
+		
+		Channel4 ch[3];
 	};
 }
 

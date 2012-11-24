@@ -1,8 +1,7 @@
 
 #define	LOCAL_LOG
 
-#include "m_s98/m_s98.h"
-#include "pmdwin/pmdwin.h"
+#include "m_s98.h"
 #include "net_autch_android_s98droid_MS98NativeInterface.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -12,12 +11,6 @@
 #ifdef	LOCAL_LOG
 #include <android/log.h>
 #endif
-
-
-#define USE_S98		0
-#define USE_PMDWIN		1
-
-static int select_synth = USE_S98;	// USE_S98 || USE_PMDWIN
 
 static s98File* theFile = NULL; // THE s98 file
 // PMDWin instance is at pmdwin.cpp
@@ -31,14 +24,6 @@ static s98File* theFile = NULL; // THE s98 file
 JNIEXPORT void JNICALL Java_net_autch_android_s98droid_MS98NativeInterface_ms98Init
   (JNIEnv *, jclass)
 {
-	pmdwininit((char*)"/sdcard/s98");
-	setpcmrate(SAMPLE_RATE);
-	//setfmcalc55k(true);
-	setppsuse(true);
-	setrhythmwithssgeffect(true);
-	setppsinterpolation(true);
-	//setp86interpolation(true);
-	//setppzinterpolation(true);
 }
 
 /*
@@ -49,15 +34,9 @@ JNIEXPORT void JNICALL Java_net_autch_android_s98droid_MS98NativeInterface_ms98I
 JNIEXPORT void JNICALL Java_net_autch_android_s98droid_MS98NativeInterface_ms98Deinit
   (JNIEnv *, jclass)
 {
-	switch(select_synth) {
-	case USE_S98:
-		if(theFile != NULL) {
-			delete theFile;
-			theFile = NULL;
-		}
-		break;
-	case USE_PMDWIN:
-		music_stop();
+	if(theFile != NULL) {
+		delete theFile;
+		theFile = NULL;
 	}
 }
 
@@ -93,39 +72,6 @@ int load_s98(const char* cszFileName)
 	return ret;
 }
 
-int load_pmdwin(const char* cszFileName)
-{
-	music_stop();
-
-	int ret = music_load((char*)cszFileName);
-
-	__android_log_print(ANDROID_LOG_DEBUG, "PMDWin", "music_load: %d", ret);
-
-	switch(ret) {
-	case PMDWIN_OK:
-	case ERR_OPEN_PPC_FILE:
-	case WARNING_PPC_ALREADY_LOAD:
-	case ERR_OPEN_P86_FILE:
-	case ERR_OPEN_PPS_FILE:
-	case WARNING_PPS_ALREADY_LOAD:
-	case ERR_OPEN_PPZ1_FILE:
-	case ERR_OPEN_PPZ2_FILE:
-	case WARNING_PPZ1_ALREADY_LOAD:
-	case WARNING_PPZ2_ALREADY_LOAD:
-		music_start();
-		return 1;
-	case ERR_WRONG_PPC_FILE:
-	case ERR_WRONG_PPZ1_FILE:
-	case ERR_WRONG_PPZ2_FILE:
-	case ERR_WRONG_P86_FILE:
-	case ERR_OPEN_MUSIC_FILE:
-	case ERR_WRONG_MUSIC_FILE:
-	case ERR_OUT_OF_MEMORY:
-	case ERR_OTHER:
-		return 0;
-	}
-}
-
 /*
  * Class:     net_autch_android_s98droid_MS98NativeInterface
  * Method:    ms98OpenFile
@@ -151,10 +97,6 @@ JNIEXPORT jint JNICALL Java_net_autch_android_s98droid_MS98NativeInterface_ms98O
 	if(strcmp(pPeriod, ".s98") == 0 || strcmp(pPeriod, ".S98") == 0) {
 		// this may be a s98
 		ret = load_s98(cszFileName);
-		select_synth = USE_S98;
-	} else {
-		ret = load_pmdwin(cszFileName);
-		select_synth = USE_PMDWIN;
 	}
 	env->ReleaseStringUTFChars(filename, cszFileName);
 	return ret;
@@ -171,15 +113,9 @@ JNIEXPORT jint JNICALL Java_net_autch_android_s98droid_MS98NativeInterface_ms98R
 	jbyte* buffer = env->GetByteArrayElements(jbuffer, NULL);
 	jint ret;
 
-	if(select_synth == USE_S98) {
-		if(theFile == NULL) return 0;
-		memset(buffer, 0, size);
-		ret = theFile->Write((Int16*)buffer, (uint32_t)(size / 4)) * 4;
-	} else {
-		memset(buffer, 0, size);
-		getpcmdata((short*)buffer, size / 4);
-		ret = size;
-	}
+	if(theFile == NULL) return 0;
+	memset(buffer, 0, size);
+	ret = theFile->Write((Int16*)buffer, (uint32_t)(size / 4)) * 4;
 
 	env->ReleaseByteArrayElements(jbuffer, buffer, 0);
 
@@ -194,15 +130,9 @@ JNIEXPORT jint JNICALL Java_net_autch_android_s98droid_MS98NativeInterface_ms98R
 JNIEXPORT void JNICALL Java_net_autch_android_s98droid_MS98NativeInterface_ms98Close
   (JNIEnv *, jclass)
 {
-	switch(select_synth) {
-	case USE_S98:
-		if(theFile != NULL) {
-			delete theFile;
-			theFile = NULL;
-		}
-		break;
-	case USE_PMDWIN:
-		music_stop();
+	if(theFile != NULL) {
+		delete theFile;
+		theFile = NULL;
 	}
 }
 

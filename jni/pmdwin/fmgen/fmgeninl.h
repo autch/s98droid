@@ -164,21 +164,7 @@ inline void Operator::SetKS(uint ks)
 inline void Operator::SetSSGEC(uint ssgec)	
 { 
 	if (ssgec & 8)
-	{
 		ssg_type_ = ssgec; 
-		switch (eg_phase_)
-		{
-		case attack:
-			ssg_phase_ = 0;
-			break;
-		case decay:
-			ssg_phase_ = 1;
-			break;
-		default:
-			ssg_phase_ = 2;
-			break;
-		}
-	}
 	else
 		ssg_type_ = 0;
 }

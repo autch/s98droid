@@ -134,7 +134,8 @@ namespace FM
 		uint	noise;
 		int32	noisecount;
 		uint32	noisedelta;
-
+		
+		bool	interpolation;
 		uint8	lfofreq;
 		uint8	status;
 		uint8	reg01;

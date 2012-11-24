@@ -12,7 +12,6 @@
 #define BUILD_OPN
 #define BUILD_OPNA
 #define BUILD_OPNB
-#define BUILD_OPN2
 
 
 //	TOFIX:
@@ -36,7 +35,7 @@ namespace FM
 // ---------------------------------------------------------------------------
 //	OPNBase
 
-#if defined(BUILD_OPN) || defined(BUILD_OPNA) || defined (BUILD_OPNB) || defined (BUILD_OPN2)
+#if defined(BUILD_OPN) || defined(BUILD_OPNA) || defined (BUILD_OPNB)
 
 uint32	OPNBase::lfotable[8];			// OPNA/B 用
 
@@ -166,7 +165,7 @@ void OPNBase::TimerA()
 	}
 }
 
-#endif // defined(BUILD_OPN) || defined(BUILD_OPNA) || defined (BUILD_OPNB) || defined (BUILD_OPN2)
+#endif // defined(BUILD_OPN) || defined(BUILD_OPNA) || defined (BUILD_OPNB)
 
 // ---------------------------------------------------------------------------
 //	YM2203
@@ -198,7 +197,6 @@ bool OPN::Init(uint c, uint r, bool ip, const char*)
 	SetVolumeFM(0);
 	SetVolumePSG(0);
 	SetChannelMask(0);
-	SetPan(0xff);
 	return true;
 }
 
@@ -328,12 +326,6 @@ void OPN::SetChannelMask(uint mask)
 	psg.SetChannelMask(mask >> 6);
 }
 
-// �p���w��
-void OPN::SetPan(uint panning)
-{
-	pan = (panning >> 6) & 3;
-	psg.SetPan(panning & 0x3f);
-}
 
 //	合成(2ch)
 void OPN::Mix(Sample* buffer, int nsamples)
@@ -366,8 +358,8 @@ void OPN::Mix(Sample* buffer, int nsamples)
 			if (actch & 0x04) s += ch[1].Calc();
 			if (actch & 0x10) s += ch[2].Calc();
 			s = IStoSample(s);
-			StoreSample(dest[0], (pan&1)?s:0);
-			StoreSample(dest[1], (pan&2)?s:0);
+			StoreSample(dest[0], s);
+			StoreSample(dest[1], s);
 		}
 	}
 #undef IStoSample
@@ -379,7 +371,7 @@ void OPN::Mix(Sample* buffer, int nsamples)
 //	YM2608/2610 common part
 // ---------------------------------------------------------------------------
 
-#if defined(BUILD_OPNA) || defined(BUILD_OPNB) || defined (BUILD_OPN2)
+#if defined(BUILD_OPNA) || defined(BUILD_OPNB)
 
 int OPNABase::amtable[FM_LFOENTS] = { -1, };
 int OPNABase::pmtable[FM_LFOENTS];
@@ -389,9 +381,6 @@ bool OPNABase::tablehasmade = false;
 
 OPNABase::OPNABase()
 {
-	ch6dac_enable = 0;
-	ch6dac_disable = 0x80;
-
 	adpcmbuf = 0;
 	memaddr = 0;
 	startaddr = 0;
@@ -1079,8 +1068,6 @@ void OPNABase::FMMix(Sample* buffer, int nsamples)
 			act |= (ch[3].Prepare() | ((ch[4].Prepare() | (ch[5].Prepare() << 2)) << 2)) << 6;
 		if (!(reg22 & 0x08))
 			act &= 0x555;
-		
-		if (!ch6dac_disable) act &= ~(3 << 10);
 
 		if (act & 0x555)
 		{
@@ -1175,7 +1162,7 @@ void OPNABase::Mix6(Sample* buffer, int nsamples, int activech)
 	}
 }
 
-#endif // defined(BUILD_OPNA) || defined(BUILD_OPNB) || defined (BUILD_OPN2)
+#endif // defined(BUILD_OPNA) || defined(BUILD_OPNB)
 
 // ---------------------------------------------------------------------------
 //	YM2608(OPNA)
@@ -1194,8 +1181,6 @@ OPNA::OPNA()
 		rhythm[i].pos = 0;
 		rhythm[i].size = 0;
 		rhythm[i].volume = 0;
-		rhythm[i].level = 0;
-		rhythm[i].pan = 0;
 	}
 	rhythmtvol = 0;
 	adpcmmask = 0x3ffff;
@@ -1568,7 +1553,7 @@ bool OPNB::Init(uint c, uint r, bool ipflag,
 	SetVolumeADPCMB(0);
 	SetVolumeADPCMATotal(0);
 	for (i=0; i<6; i++)
-		SetVolumeADPCMA(i, 0);
+		SetVolumeADPCMA(0, 0);
 	SetChannelMask(0);
 	return true;
 }
@@ -1885,214 +1870,6 @@ void OPNB::Mix(Sample* buffer, int nsamples)
 }
 
 #endif // BUILD_OPNB
-
-// ---------------------------------------------------------------------------
-//	YM2612(OPN2)
-// ---------------------------------------------------------------------------
-
-#ifdef BUILD_OPN2
-
-#define OPN2_DAC_FIFO_SIZE 0x8000
-
-// ---------------------------------------------------------------------------
-//	�\�z
-//
-OPN2::OPN2()
-{
-	ch6dac_fifo = 0;
-	csmch = &ch[2];
-}
-
-// ---------------------------------------------------------------------------
-
-OPN2::~OPN2()
-{
-	if(ch6dac_fifo) delete[] ch6dac_fifo;
-}
-
-
-
-// ---------------------------------------------------------------------------
-//	����
-//
-bool OPN2::Init(uint c, uint r, bool ipflag, const char*)
-{
-	rate = 8000;
-	ch6dac_interpolation = ipflag;
-
-	if (!ch6dac_fifo)
-		ch6dac_fifo = new uint8[OPN2_DAC_FIFO_SIZE + 1];
-	if (!ch6dac_fifo)
-		return false;
-
-	if (!SetRate(c, r, ipflag))
-		return false;
-	if (!OPNABase::Init(c, r, ipflag))
-		return false;
-	
-	Reset();
-
-	return true;
-}
-
-// ---------------------------------------------------------------------------
-//	���Z�b�g
-//
-void OPN2::Reset()
-{
-	OPNABase::Reset();
-	SetVolumePCM(0);
-	if (ch6dac_fifo) ch6dac_fifo[0] = 0x80;
-	ch6dac_ptr = 0;
-	ch6dac_enable = 0;
-	ch6dac_disable = 0x80;
-	ch6dac_data = 0;
-	ch6dac_pan = 3;
-	stmask = ~0;
-	reg29 = ~0;
-}
-
-// ---------------------------------------------------------------------------
-//	�T���v�����O���[�g�ύX
-//
-bool OPN2::SetRate(uint c, uint r, bool ipflag)
-{
-	if (!OPNABase::SetRate(c, r, ipflag))
-		return false;
-	return true;
-}
-
-// ---------------------------------------------------------------------------
-//	���W�X�^�A���C�Ƀf�[�^��ݒ�
-//
-void OPN2::SetReg(uint addr, uint data)
-{
-	addr &= 0x1ff;
-
-	switch (addr)
-	{
-	case 0x29:
-	case 0x2d: case 0x2e: case 0x2f:
-		break;
-	case 0x2a:
-		ch6dac_data = data;
-		if (ch6dac_fifo && ch6dac_ptr < OPN2_DAC_FIFO_SIZE)
-		{
-			ch6dac_fifo[ch6dac_ptr++] = data;
-			ch6dac_fifo[ch6dac_ptr] = data;
-		}
-		break;
-	case 0x2b:
-		if (data & 0x80)
-		{
-			ch6dac_enable = 0x80;
-			ch6dac_disable = 0;
-		}
-		else
-		{
-			ch6dac_disable = 0x80;
-		}
-		break;
-	case 0x1b6:
-		ch6dac_pan = (data & 0xc0) >> 6;
-		OPNABase::SetReg(addr, data);
-		break;
-
-	default:
-		OPNABase::SetReg(addr, data);
-		break;
-	}
-}
-
-// ---------------------------------------------------------------------------
-//	���ʐݒ�
-//
-void OPN2::SetVolumePCM(int db)
-{
-	db = Min(db, 20);
-	db = -(db * 2 / 3);
-	db = Limit(db, 127, -31);
-	ch6dac_vol = tltable[FM_TLPOS+(db << (FM_TLBITS-7))] >> 4;
-}
-
-// ---------------------------------------------------------------------------
-//	DAC����
-//	in:		dest		������
-//			count	�����T���v����
-//
-void OPN2::PCMMix(Sample* dest, uint count)
-{
-	if (!ch6dac_fifo) return;
-	Sample dacout = 0;
-	if (ch6dac_enable)
-	{
-		if (ch6dac_interpolation)
-		{
-			int spd, phase, phasemax;
-			phase = 0;
-			if (count && ch6dac_ptr)
-			{
-				phasemax = ch6dac_ptr << 16;
-				spd = (phasemax / count);
-				while (count && phase < phasemax)
-				{
-					dacout = ch6dac_fifo[(phase >> 16)+1];
-					dacout = (dacout - 0x80) << 6;
-					if (ch6dac_pan & 2) dest[0] += dacout;
-					if (ch6dac_pan & 1) dest[1] += dacout;
-					dest += 2;
-					count--;
-					phase += spd;
-				}
-				ch6dac_fifo[0] = ch6dac_fifo[ch6dac_ptr];
-				ch6dac_ptr = 0;
-			}
-			if (count)
-			{
-				dacout = ch6dac_fifo[0];
-				dacout = ((dacout - 0x80) << 6);
-				while (count)
-				{
-					if (ch6dac_pan & 2) dest[0] += dacout;
-					if (ch6dac_pan & 1) dest[1] += dacout;
-					dest += 2;
-					count--;
-				}
-			}
-		} else {
-			while (count)
-			{
-				dacout = ch6dac_data;
-				dacout = ((dacout - 0x80) << 6);
-				if (ch6dac_pan & 2) dest[0] += dacout;
-				if (ch6dac_pan & 1) dest[1] += dacout;
-				dest += 2;
-				count--;
-			}
-		}
-	}
-	else
-	{
-		ch6dac_fifo[0] = ch6dac_fifo[ch6dac_ptr];
-		ch6dac_ptr = 0;
-	}
-	ch6dac_enable = !ch6dac_disable;
-}
-
-
-// ---------------------------------------------------------------------------
-//	����
-//	in:		buffer		������
-//			nsamples	�����T���v����
-//
-void OPN2::Mix(Sample* buffer, int nsamples)
-{
-	FMMix(buffer, nsamples);
-	PCMMix(buffer, nsamples);
-}
-
-#endif // BUILD_OPN2
-
 
 
 }	// namespace FM

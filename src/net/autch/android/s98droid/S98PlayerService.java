@@ -33,7 +33,8 @@ public class S98PlayerService extends Service {
 	private NotificationManager nm;
 
 	// 何度も使いまわす
-	private final Runnable audioStreamer = new Runnable() {
+	private Runnable audioStreamer = null;
+	private final Runnable audioStreamerS98 = new Runnable() {
 		public void run() {
 			while(!terminate) {
 				try {
@@ -42,6 +43,25 @@ public class S98PlayerService extends Service {
 						track.stop();
 						Log.d(TAG, "stream terminated");
 						MS98NativeInterface.ms98Close();
+						break;
+					}
+					track.write(buffer, 0, buffer.length);
+					Thread.sleep(WAIT_PER_BLOCK);
+				} catch (InterruptedException e) {
+					// thru
+				}
+			}
+		}
+	};
+	private final Runnable audioStreamerPMDWin = new Runnable() {
+		public void run() {
+			while(!terminate) {
+				try {
+					int ret = PMDWinNativeInterface.pmdwinRender(buffer, buffer.length);
+					if(ret == 0) {
+						track.stop();
+						Log.d(TAG, "stream terminated");
+						PMDWinNativeInterface.pmdwinClose();
 						break;
 					}
 					track.write(buffer, 0, buffer.length);
@@ -76,6 +96,7 @@ public class S98PlayerService extends Service {
 		terminate = false;
 		thread = null;
 		MS98NativeInterface.ms98Init();
+		PMDWinNativeInterface.pmdwinInit();
 	}
 
 	@Override
@@ -83,6 +104,7 @@ public class S98PlayerService extends Service {
 		stopSong();
 		track.release();
 		MS98NativeInterface.ms98Deinit();
+		PMDWinNativeInterface.pmdwinDeinit();
 
 		super.onDestroy();
 	}
@@ -102,10 +124,21 @@ public class S98PlayerService extends Service {
 		if(thread != null)
 			stopSong();
 		this.filename = filename;
-		if(MS98NativeInterface.ms98OpenFile(filename) != 1) {
-			Log.e(TAG, "Cannot open " + filename + " for playing");
-			stopSelf();
-			return;
+		
+		if(this.filename.toLowerCase().endsWith(".s98")) {
+			if(MS98NativeInterface.ms98OpenFile(filename) != 1) {
+				Log.e(TAG, "Cannot open " + filename + " for playing");
+				stopSelf();
+				return;
+			}
+			audioStreamer = audioStreamerS98;
+		} else {
+			if(PMDWinNativeInterface.pmdwinOpenFile(filename) != 1) {
+				Log.e(TAG, "Cannot open " + filename + " for playing");
+				stopSelf();
+				return;
+			}
+			audioStreamer = audioStreamerPMDWin;
 		}
 		terminate = false;
 		track.play();
@@ -151,6 +184,7 @@ public class S98PlayerService extends Service {
 		thread = null;
 		track.stop();
 		MS98NativeInterface.ms98Close();
+		PMDWinNativeInterface.pmdwinClose();
 		nm.cancel(NID_PMD_PLAYING);
 	}
 
