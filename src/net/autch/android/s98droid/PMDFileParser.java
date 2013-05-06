@@ -32,7 +32,6 @@ public class PMDFileParser {
 			is.close();
 		}
 
-		Log.d("FGetMemo3", filename);
 		ret = PMDWinNativeInterface.pmdwinFGetMemo3(buffer, filename, 1);
 		if(ret == 0) {
 			String s = new String(buffer, "Shift_JIS");

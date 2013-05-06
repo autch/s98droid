@@ -72,25 +72,25 @@ public class SelectSong extends ListActivity {
 		dialog = ProgressDialog.show(this, null, "曲を探しています...", true, false);
 		final ContentResolver cr = this.getContentResolver();
 		new Thread(new Runnable() {
-			private boolean accept(File fn) {
-				String ext = fn.getName().toLowerCase();
-				boolean f = false;
-
-				f = f || ext.endsWith(".s98");
-				f = f || ext.endsWith(".m");
-				f = f || ext.endsWith(".m2");
-				f = f || ext.endsWith(".mz");
-				f = f || ext.endsWith(".mp");
-				f = f || ext.endsWith(".ms");
-
-				return f;
+			private String getWhereClause() {
+				StringBuilder s = new StringBuilder();
+				
+				s.append(MediaStore.Files.FileColumns.MEDIA_TYPE).append("=").append(MediaStore.Files.FileColumns.MEDIA_TYPE_NONE);
+				s.append(" AND (");
+				s.append("LOWER(").append(MediaStore.Files.FileColumns.DATA).append(") LIKE '%.s98'");
+				s.append("OR LOWER(").append(MediaStore.Files.FileColumns.DATA).append(") LIKE '%.m'");
+				s.append("OR LOWER(").append(MediaStore.Files.FileColumns.DATA).append(") LIKE '%.m2'");
+				s.append("OR LOWER(").append(MediaStore.Files.FileColumns.DATA).append(") LIKE '%.mz'");
+				s.append("OR LOWER(").append(MediaStore.Files.FileColumns.DATA).append(") LIKE '%.mp'");
+				s.append("OR LOWER(").append(MediaStore.Files.FileColumns.DATA).append(") LIKE '%.ms'");
+				s.append(")");
+				return s.toString();
 			}
 
 			public void run() {
 				Uri uri = MediaStore.Files.getContentUri("external");
 				String[] projection = { BaseColumns._ID, MediaColumns.DATA };
-				String where = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
-						+ MediaStore.Files.FileColumns.MEDIA_TYPE_NONE;
+				String where = getWhereClause();
 				Cursor mediaFiles = cr.query(uri, projection, where, null,
 						MediaColumns.DATA);
 				try {
@@ -99,8 +99,6 @@ public class SelectSong extends ListActivity {
 					while (mediaFiles.moveToNext()) {
 						String filename = mediaFiles.getString(dataCol);
 						File f = new File(filename);
-						if (this.accept(f) == false)
-							continue;
 						try {
 							Map<String, String> tags;
 							if (f.getName().toLowerCase().endsWith(".s98")) {

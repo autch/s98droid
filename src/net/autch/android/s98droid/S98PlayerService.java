@@ -111,9 +111,9 @@ public class S98PlayerService extends Service {
 			Log.d(TAG, "onStart(): " + filename);
 			startSong(filename);
 		} else if(action.equals(ACTION_PAUSE)) {
-			
+			pauseSong();
 		} else if(action.equals(ACTION_RESUME)) {
-			
+			resumeSong();
 		} else if(action.equals(ACTION_STOP)) {
 			stopSong();
 		}
