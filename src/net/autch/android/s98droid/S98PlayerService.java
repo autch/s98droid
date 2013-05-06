@@ -16,11 +16,16 @@ import android.util.Log;
 public class S98PlayerService extends Service {
 	private static final String TAG = "S98PlayerService";
 
+	public static final String ACTION_PLAY = "net.autch.android.s98droid.service.ACTION_PLAY";
+	public static final String ACTION_PAUSE = "net.autch.android.s98droid.service.ACTION_PAUSE";
+	public static final String ACTION_RESUME = "net.autch.android.s98droid.service.ACTION_RESUME";
+	public static final String ACTION_STOP = "net.autch.android.s98droid.service.ACTION_STOP";
+	
 	private static final int SAMPLES_PER_SEC = 48000;
 	private static final int BYTES_PER_SECOND = SAMPLES_PER_SEC * 2 * 2;
-	private static final int TRACK_BUFFER_SIZE = BYTES_PER_SECOND / 4;
-	private static final int BLOCKS_AT_ONCE = BYTES_PER_SECOND / 8;
-	private static final int WAIT_PER_BLOCK = 0;
+	private static final int TRACK_BUFFER_SIZE = BYTES_PER_SECOND / 2;
+	private static final int BLOCKS_AT_ONCE = BYTES_PER_SECOND / 4;
+	private static final int WAIT_PER_BLOCK = 20;
 
 	private static final int NID_PMD_PLAYING = 0x1;
 
@@ -30,8 +35,7 @@ public class S98PlayerService extends Service {
 	private final byte[] empty = new byte[256];
 	private String filename, title, title2;
 	private Thread thread; 
-	private NotificationManager nm;
-
+	
 	// 何度も使いまわす
 	private Runnable audioStreamer = null;
 	private final Runnable audioStreamerS98 = new Runnable() {
@@ -73,23 +77,10 @@ public class S98PlayerService extends Service {
 		}
 	};
 
-	public class S98PlayerServiceBinder extends Binder {
-		public S98PlayerService getService() {
-			return S98PlayerService.this;
-		}
-	}
-
-	@Override
-	public IBinder onBind(Intent intent) {
-		return new S98PlayerServiceBinder();
-	}
-
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		setForeground(true);
 		Log.d(TAG, "onCreate()");
-		nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
 		track = new AudioTrack(AudioManager.STREAM_MUSIC, SAMPLES_PER_SEC, AudioFormat.CHANNEL_OUT_STEREO,
 				AudioFormat.ENCODING_PCM_16BIT,	TRACK_BUFFER_SIZE, AudioTrack.MODE_STREAM);
@@ -108,16 +99,25 @@ public class S98PlayerService extends Service {
 
 		super.onDestroy();
 	}
-
+	
 	@Override
-	public void onStart(Intent intent, int startId) {
-		super.onStart(intent, startId);
-
-		filename = intent.getStringExtra("filename");
-		title = intent.getStringExtra("title");
-		title2 = intent.getStringExtra("title2");
-		Log.d(TAG, "onStart(): " + filename);
-		startSong(filename);
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		super.onStartCommand(intent, flags, startId);
+		String action = intent.getAction();
+		if(action.equals(ACTION_PLAY)) {
+			filename = intent.getStringExtra("filename");
+			title = intent.getStringExtra("title");
+			title2 = intent.getStringExtra("title2");
+			Log.d(TAG, "onStart(): " + filename);
+			startSong(filename);
+		} else if(action.equals(ACTION_PAUSE)) {
+			
+		} else if(action.equals(ACTION_RESUME)) {
+			
+		} else if(action.equals(ACTION_STOP)) {
+			stopSong();
+		}
+		return START_STICKY;
 	}
 
 	public synchronized void startSong(String filename) {
@@ -154,7 +154,8 @@ public class S98PlayerService extends Service {
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
 		nf.setLatestEventInfo(getApplicationContext(), title, title2, contentIntent);
-		nm.notify(NID_PMD_PLAYING, nf);
+		//nm.notify(NID_PMD_PLAYING, nf);
+		startForeground(NID_PMD_PLAYING, nf);
 	}
 
 	public synchronized void pauseSong() {
@@ -185,7 +186,8 @@ public class S98PlayerService extends Service {
 		track.stop();
 		MS98NativeInterface.ms98Close();
 		PMDWinNativeInterface.pmdwinClose();
-		nm.cancel(NID_PMD_PLAYING);
+		//nm.cancel(NID_PMD_PLAYING);
+		stopForeground(true);
 	}
 
 	public String getFilename() {
@@ -206,5 +208,11 @@ public class S98PlayerService extends Service {
 		long pos = track.getPlaybackHeadPosition();
 		pos /= SAMPLES_PER_SEC * 2;
 		return (int)pos;
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		// TODO 自動生成されたメソッド・スタブ
+		return null;
 	}
 }

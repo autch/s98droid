@@ -3,18 +3,31 @@
     android:versionCode="1"
     android:versionName="1.0">
 
-    <uses-sdk android:minSdkVersion="7" android:targetSdkVersion="7" />
+    <uses-sdk android:minSdkVersion="14" android:targetSdkVersion="14" />
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <application android:label="@string/app_name"
         android:icon="@drawable/ic_launcher"
         android:theme="@style/AppTheme" android:debuggable="true">
-        <activity android:name="SelectSong" android:launchMode="standard">
+        <activity android:name=".SelectSong" android:launchMode="singleInstance">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN"/>
 				<category android:name="android.intent.category.LAUNCHER"/>
 			</intent-filter>
         </activity>
-		<service android:name="S98PlayerService"/>
+		<service android:name=".S98PlayerService">
+		    <intent-filter>
+		        <action android:name="net.autch.android.s98droid.service.ACTION_PLAY"/>
+		        <action android:name="net.autch.android.s98droid.service.ACTION_PAUSE"/>
+   		        <action android:name="net.autch.android.s98droid.service.ACTION_RESUME"/>
+   		        <action android:name="net.autch.android.s98droid.service.ACTION_STOP"/>
+ 		    </intent-filter>
+	    </service>
+		<receiver android:name="RemoteControlEventReceiver">
+			<intent-filter>
+				<action android:name="android.intent.action.MEDIA_BUTTON"/>
+			</intent-filter>
+		</receiver>
         
     </application>
 
