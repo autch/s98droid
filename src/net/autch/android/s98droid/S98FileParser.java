@@ -68,7 +68,7 @@ public class S98FileParser {
 						try {
 							String charCode;
 							int offset = 0;
-							if(buffer[5] == 0xef && buffer[6] == 0xbb && buffer[7] == 0xbf) {
+							if(buffer[5] == (byte)0xef && buffer[6] == (byte)0xbb && buffer[7] == (byte)0xbf) {
 								// BOM
 								charCode = "UTF-8";
 								offset = 5 + 3;
