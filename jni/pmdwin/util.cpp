@@ -4,10 +4,12 @@
 //=============================================================================
 
 #include	"util.h"
+#include 	<stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <string.h>
 
 int ismbblead(uint8_t c)
 {

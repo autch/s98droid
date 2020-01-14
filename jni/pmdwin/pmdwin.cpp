@@ -5365,14 +5365,21 @@ void PMDWIN::lfoinitp(QQ *qq, int al)
 
 	qq->onkai_def = al;
 
-	if(ah == 0x0f) {		// キューフ ノ トキ ハ INIT シナイヨ
+	// 4.8r 修正
+	if (ah == 0x0f) {		// キューフ ノ トキ ハ INIT シナイヨ
+		// PMD 4.8r 修正
+		soft_env(qq);
+		
 		lfo_exit(qq);
 		return;
 	}
 	
 	qq->porta_num = 0;				// ポルタメントは初期化
 	
-	if(pmdwork.tieflag & 1) {
+	if (pmdwork.tieflag & 1) {	// ﾏｴ ｶﾞ & ﾉ ﾄｷ ﾓ INIT ｼﾅｲ｡
+		// PMD 4.8r 修正
+		soft_env(qq);			// 前が & の場合 -> 1回 SofeEnv処理
+		
 		lfo_exit(qq);
 		return;
 	}

@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
 
 #ifdef	LOCAL_LOG
 #include <android/log.h>
@@ -92,7 +93,7 @@ JNIEXPORT jint JNICALL Java_net_autch_android_s98droid_PMDWinNativeInterface_pmd
 	char* pPeriod;
 
 
-	pPeriod = strrchr(cszFileName, '.');
+	pPeriod = strrchr(const_cast<char*>(cszFileName), '.');
 	if(pPeriod == NULL) {
 		env->ReleaseStringUTFChars(filename, cszFileName);
 		return 0;

@@ -6,6 +6,7 @@
 
 #include	<stdio.h>
 #include	<string.h>
+#include    <stdlib.h>
 #include	<math.h>
 #include	"p86drv.h"
 #include	"util.h"
@@ -127,7 +128,8 @@ void P86DRV::MakeVolumeTable(int volume)
 	if(AVolume != AVolume_temp) {
 		AVolume = AVolume_temp;
 		for(i = 0; i < 16; i++) {
-			temp = pow(2.0, (i + 15) / 2.0) * AVolume / 0x18000;
+//@			temp = pow(2.0, (i + 15) / 2.0) * AVolume / 0x18000;
+			temp = i * AVolume / 256;
 			for(j = 0; j < 256; j++) {
 				VolumeTable[i][j] = (Sample)(read_char(&j) * temp);
 			}
